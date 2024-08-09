@@ -5,11 +5,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome.options import Options
 import logging as lg
+from docx2pdf import convert
 from datetime import datetime
 from docx import Document as DocxDocument
 from docx.shared import RGBColor, Cm, Pt
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-from fpdf import FPDF, FileFormat
+from fpdf import FPDF
 
 # Configuração de logging
 lg.basicConfig(level=lg.INFO, format='%(asctime)s - %(message)s')
@@ -70,11 +71,15 @@ def extrair_cotacao_dolar():
         driver.save_screenshot('site.png')
 
         if cotacao_dolar_texto:
+            
             cotacao_dolar_titulo = cotacao_dolar_texto[0]
             cotacao_dolar_valor = float(cotacao_dolar_texto[1].replace(',', '.'))
             cotacao_dolar_porcentagem = float(cotacao_dolar_texto[2].replace('-', '').replace(',', '.').replace('%', ''))
+            
             data_atual = datetime.now().strftime('%d/%m/%Y')
+            
             lg.info(f'Cotação do dólar: {cotacao_dolar_valor:.2f} - {cotacao_dolar_titulo} - {cotacao_dolar_porcentagem}% - {data_atual}')
+            
             return cotacao_dolar_valor, cotacao_dolar_titulo, cotacao_dolar_porcentagem, data_atual, url_site
     except NoSuchElementException as e:
         lg.error(f'Elemento não encontrado: {e}')
@@ -93,7 +98,7 @@ def salvar_dados_word():
     doc = DocxDocument()
 
     # Título
-    heading_text = f'{cotacao_dolar_titulo} - R${cotacao_dolar_valor:.2f} ({data_atual})'
+    heading_text = f'{cotacao_dolar_titulo} - R${cotacao_dolar_valor:.2f} ({data_atual})\n\n'
     heading = doc.add_heading(heading_text, level=1)
     for run in heading.runs:
         run.font.color.rgb = RGBColor(0x00, 0x80, 0x00)  # Verde
@@ -103,14 +108,13 @@ def salvar_dados_word():
     # Parágrafo 1
     paragraph1 = doc.add_paragraph()
     run1 = paragraph1.add_run(f'O dólar está custando R${cotacao_dolar_valor:.2f} na data de {data_atual}.')
-    run1.font.color.rgb = RGBColor(0x00, 0x00, 0xFF)  # Azul
     run1.font.size = Pt(12)
     paragraph1.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY
+    paragraph1.paragraph_format.space_after = Pt(0)
 
     # Parágrafo 2
     paragraph2 = doc.add_paragraph()
     run2 = paragraph2.add_run(f'Valor cotado no site: {url_site}')
-    run2.font.color.rgb = RGBColor(0xFF, 0x00, 0x00)  # Vermelho
     run2.font.size = Pt(12)
     paragraph2.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY
 
@@ -119,33 +123,28 @@ def salvar_dados_word():
 
     # Parágrafo 3
     if cotacao_dolar_porcentagem > 0:
-        paragraph3 = doc.add_paragraph(f'Cotação subiu {cotacao_dolar_porcentagem}% em relação ao dia anterior.')
+        paragraph3 = doc.add_paragraph(f'Cotação subiu {cotacao_dolar_porcentagem}% em relação ao dia anterior.\n\n')
     elif cotacao_dolar_porcentagem < 0:
-        paragraph3 = doc.add_paragraph(f'Cotação desceu {cotacao_dolar_porcentagem}% em relação ao dia anterior.')
+        paragraph3 = doc.add_paragraph(f'Cotação desceu {cotacao_dolar_porcentagem}% em relação ao dia anterior.\n\n')
     else:
-        paragraph3 = doc.add_paragraph('Cotação está estável em relação ao dia anterior.')
-    paragraph3.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY
+        paragraph3 = doc.add_paragraph('Cotação está estável em relação ao dia anterior.\n\n')
+    paragraph3.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
     # Parágrafo 4
     paragraph4 = doc.add_paragraph()
-    run4 = paragraph4.add_run('Cotação feita por: Gabriel Machado 😎')
+    run4 = paragraph4.add_run('Cotação feita por: Gabriel Machado')
     run4.font.color.rgb = RGBColor(0x80, 0x00, 0x80)  # Roxo
     run4.font.size = Pt(12)
-    paragraph4.alignment = WD_PARAGRAPH_ALIGNMENT.RIGHT
+    paragraph4.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
 
     doc.save('cotacao_dolar.docx')
-
-salvar_dados_word()
 
 def converter_word_pdf():
     sistema_operacional = platform.system()
     
     if sistema_operacional == 'Windows':
-        # Usar Spire.Doc para Windows
-        document = DocxDocument()
-        document.load_from_file("cotacao_dolar.docx")
-        document.save_to_file("cotacao_dolar.pdf", FileFormat.PDF)
-        document.close()
+        convert("cotacao_dolar.docx", "cotacao_dolar.pdf")
+        
     elif sistema_operacional in ['Darwin', 'Linux']:
         # Usar python-docx e fpdf2 para macOS e Linux
         doc = DocxDocument("cotacao_dolar.docx")
@@ -161,5 +160,7 @@ def converter_word_pdf():
     else:
         print("Sistema operacional não suportado.")
 
-# Chamar a função para converter o arquivo Word em PDF
-converter_word_pdf()
+if __name__ == '__main__':
+    salvar_dados_word()
+    converter_word_pdf()
+    
