@@ -1,0 +1,6 @@
+docx2pdf==0.1.8
+fpdf2==2.7.9
+python-docx==1.1.2
+selenium==4.23.1
+webdriver-manager==4.0.2
+
