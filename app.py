@@ -4,7 +4,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome.options import Options
-import logging as lg
+import os
 from docx2pdf import convert
 from datetime import datetime
 from docx import Document as DocxDocument
@@ -12,27 +12,25 @@ from docx.shared import RGBColor, Cm, Pt
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from fpdf import FPDF
 
-# Configuração de logging
-lg.basicConfig(level=lg.INFO, format='%(asctime)s - %(message)s')
-
 DOWNLOAD_DIRECTORY = 'C:\\Users\\gabri\\OneDrive\\Área de Trabalho\\projetos\\pyautogui\\selenium_dev_aprender'
+
 
 def iniciar_driver(url_do_site):
     try:
         chrome_options = Options()
         argumentos = [
-            '--lang=pt-BR', 
-            '--window-size=1300,1000', 
-            '--disable-notifications', 
-            '--incognito', 
-            '--block-new-web-contents', 
-            '--no-default-browser-check', 
+            '--lang=pt-BR',
+            '--window-size=1300,1000',
+            '--disable-notifications',
+            '--incognito',
+            '--block-new-web-contents',
+            '--no-default-browser-check',
             'window-position=36,68',
-            '--disable-popup-blocking',  
-            '--disable-infobars',        
-            '--disable-extensions',      
-            '--disable-gpu',             
-            '--headless'                 
+            '--disable-popup-blocking',
+            '--disable-infobars',
+            '--disable-extensions',
+            '--disable-gpu',
+            '--headless'
         ]
         for argumento in argumentos:
             chrome_options.add_argument(argumento)
@@ -56,8 +54,9 @@ def iniciar_driver(url_do_site):
 
         return driver, wait
     except Exception as e:
-        lg.error(f'Erro ao inicializar o driver: {type(e).__name__} - {e}')
+        print(f'Erro ao inicializar o driver: {type(e).__name__} - {e}')
         return None, None
+
 
 def extrair_cotacao_dolar():
     driver, wait = iniciar_driver('https://valor.globo.com/valor-data/')
@@ -71,29 +70,49 @@ def extrair_cotacao_dolar():
         driver.save_screenshot('site.png')
 
         if cotacao_dolar_texto:
-            
             cotacao_dolar_titulo = cotacao_dolar_texto[0]
             cotacao_dolar_valor = float(cotacao_dolar_texto[1].replace(',', '.'))
-            cotacao_dolar_porcentagem = float(cotacao_dolar_texto[2].replace('-', '').replace(',', '.').replace('%', ''))
-            
+            cotacao_dolar_porcentagem = float(
+                cotacao_dolar_texto[2].replace('-', '').replace(',', '.').replace('%', ''))
+
             data_atual = datetime.now().strftime('%d/%m/%Y')
-            
-            lg.info(f'Cotação do dólar: {cotacao_dolar_valor:.2f} - {cotacao_dolar_titulo} - {cotacao_dolar_porcentagem}% - {data_atual}')
-            
+
+            print(
+                f'Cotação do dólar: {cotacao_dolar_valor:.2f} - {cotacao_dolar_titulo} - {cotacao_dolar_porcentagem}% - {data_atual}')
+
             return cotacao_dolar_valor, cotacao_dolar_titulo, cotacao_dolar_porcentagem, data_atual, url_site
     except NoSuchElementException as e:
-        lg.error(f'Elemento não encontrado: {e}')
+        print(f'Elemento não encontrado: {e}')
     except TimeoutException as e:
-        lg.error(f'Tempo de espera excedido: {e}')
+        print(f'Tempo de espera excedido: {e}')
     except Exception as e:
-        lg.error(f'Erro ao extrair cotação do dólar: {type(e).__name__} - {e}')
+        print(f'Erro ao extrair cotação do dólar: {type(e).__name__} - {e}')
 
     return None, None, None, None, None
+
 
 def salvar_dados_word():
     cotacao_dolar_valor, cotacao_dolar_titulo, cotacao_dolar_porcentagem, data_atual, url_site = extrair_cotacao_dolar()
     if not cotacao_dolar_valor:
-        return
+        return None
+
+    # Determinar o caminho da área de trabalho
+    sistema_operacional = platform.system()
+    if sistema_operacional == "Windows":
+        try:
+            desktop_path = os.path.join(os.environ['USERPROFILE'], 'OneDrive', 'Área de Trabalho')
+        except:
+            desktop_path = os.path.join(os.environ['USERPROFILE'], 'Desktop')
+    elif sistema_operacional in ["Darwin", "Linux"]:  # macOS e Linux
+        try:
+            desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
+        except:
+            desktop_path = os.path.join(os.path.expanduser('~'), 'Área de Trabalho')
+    else:
+        raise Exception("Sistema operacional não suportado")
+
+    # Caminho completo para salvar o arquivo
+    file_path = os.path.join(desktop_path, 'cotacao_dolar.docx')
 
     doc = DocxDocument()
 
@@ -137,30 +156,46 @@ def salvar_dados_word():
     run4.font.size = Pt(12)
     paragraph4.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
 
-    doc.save('cotacao_dolar.docx')
+    doc.save(file_path)
+
+    return file_path
+
 
 def converter_word_pdf():
+    file_path = salvar_dados_word()
+    if not file_path:
+        print("Erro ao salvar o arquivo Word.")
+        return
+
     sistema_operacional = platform.system()
-    
+
     if sistema_operacional == 'Windows':
-        convert("cotacao_dolar.docx", "cotacao_dolar.pdf")
-        
+        try:
+            convert(file_path)
+            print(f"Arquivo convertido para PDF: {file_path.replace('.docx', '.pdf')}")
+        except Exception as e:
+            print(f"Erro ao converter Word para PDF: {type(e).__name__} - {e}")
+
     elif sistema_operacional in ['Darwin', 'Linux']:
-        # Usar python-docx e fpdf2 para macOS e Linux
-        doc = DocxDocument("cotacao_dolar.docx")
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_auto_page_break(auto=True, margin=15)
-        pdf.set_font("Arial", size=12)
-        
-        for para in doc.paragraphs:
-            pdf.multi_cell(0, 10, para.text)
-        
-        pdf.output("cotacao_dolar.pdf")
+        try:
+            # Usar python-docx e fpdf2 para macOS e Linux
+            doc = DocxDocument(file_path)
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_auto_page_break(auto=True, margin=15)
+            pdf.set_font("Arial", size=12)
+
+            for para in doc.paragraphs:
+                pdf.multi_cell(0, 10, para.text)
+
+            pdf_output_path = file_path.replace('.docx', '.pdf')
+            pdf.output(pdf_output_path)
+            print(f"Arquivo convertido para PDF: {pdf_output_path}")
+        except Exception as e:
+            print(f"Erro ao converter Word para PDF: {type(e).__name__} - {e}")
     else:
         print("Sistema operacional não suportado.")
 
+
 if __name__ == '__main__':
-    salvar_dados_word()
     converter_word_pdf()
-    
