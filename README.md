@@ -65,3 +65,6 @@ Projeto Link: https://github.com/gabriel-machado-dev-py/bot-monitoramento-de-cam
 ```
 
 ```
+
+## Instalador 
+- Por motivos do tamanho do instalador, não foi possível adiciona-lo no Github
