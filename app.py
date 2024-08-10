@@ -93,6 +93,7 @@ def extrair_cotacao_dolar():
 
 def salvar_dados_word():
     cotacao_dolar_valor, cotacao_dolar_titulo, cotacao_dolar_porcentagem, data_atual, url_site = extrair_cotacao_dolar()
+    
     if not cotacao_dolar_valor:
         return None
 
@@ -100,9 +101,9 @@ def salvar_dados_word():
     sistema_operacional = platform.system()
     if sistema_operacional == "Windows":
         try:
-            desktop_path = os.path.join(os.environ['USERPROFILE'], 'OneDrive', 'Área de Trabalho')
-        except:
             desktop_path = os.path.join(os.environ['USERPROFILE'], 'Desktop')
+        except:
+            desktop_path = os.path.join(os.environ['USERPROFILE'], 'Área de Trabalho')
     elif sistema_operacional in ["Darwin", "Linux"]:  # macOS e Linux
         try:
             desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
