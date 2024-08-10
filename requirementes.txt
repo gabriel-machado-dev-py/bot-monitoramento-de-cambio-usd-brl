@@ -1,3 +1,4 @@
+cx_Freeze==7.2.0
 docx2pdf==0.1.8
 fpdf2==2.7.9
 python-docx==1.1.2

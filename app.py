@@ -123,9 +123,9 @@ def salvar_dados_word():
 
     # Parágrafo 3
     if cotacao_dolar_porcentagem > 0:
-        paragraph3 = doc.add_paragraph(f'Cotação subiu {cotacao_dolar_porcentagem}% em relação ao dia anterior.\n\n')
+        paragraph3 = doc.add_paragraph(f'Cotação caiu {cotacao_dolar_porcentagem}% em relação ao dia anterior.\n\n')
     elif cotacao_dolar_porcentagem < 0:
-        paragraph3 = doc.add_paragraph(f'Cotação desceu {cotacao_dolar_porcentagem}% em relação ao dia anterior.\n\n')
+        paragraph3 = doc.add_paragraph(f'Cotação subiu {cotacao_dolar_porcentagem}% em relação ao dia anterior.\n\n')
     else:
         paragraph3 = doc.add_paragraph('Cotação está estável em relação ao dia anterior.\n\n')
     paragraph3.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
