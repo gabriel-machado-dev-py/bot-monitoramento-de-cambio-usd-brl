@@ -13,9 +13,12 @@ from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from fpdf import FPDF
 
 DOWNLOAD_DIRECTORY = 'C:\\Users\\gabri\\OneDrive\\Área de Trabalho\\projetos\\pyautogui\\selenium_dev_aprender'
-
+URL_VALOR_DATA = 'https://valor.globo.com/valor-data/'
 
 def iniciar_driver(url_do_site):
+    """
+    Inicializa o driver do Selenium com as opções configuradas e abre a URL fornecida.
+    """
     try:
         chrome_options = Options()
         argumentos = [
@@ -57,9 +60,11 @@ def iniciar_driver(url_do_site):
         print(f'Erro ao inicializar o driver: {type(e).__name__} - {e}')
         return None, None
 
-
 def extrair_cotacao_dolar():
-    driver, wait = iniciar_driver('https://valor.globo.com/valor-data/')
+    """
+    Extrai a cotação do dólar do site especificado.
+    """
+    driver, wait = iniciar_driver(URL_VALOR_DATA)
     if not driver:
         return None, None, None, None, None
 
@@ -90,29 +95,34 @@ def extrair_cotacao_dolar():
 
     return None, None, None, None, None
 
+def obter_caminho_area_de_trabalho():
+    """
+    Obtém o caminho da área de trabalho do usuário, dependendo do sistema operacional.
+    """
+    sistema_operacional = platform.system()
+    if sistema_operacional == "Windows":
+        try:
+            return os.path.join(os.environ['USERPROFILE'], 'Desktop')
+        except KeyError:
+            return os.path.join(os.environ['USERPROFILE'], 'Área de Trabalho')
+    elif sistema_operacional in ["Darwin", "Linux"]:  # macOS e Linux
+        try:
+            return os.path.join(os.path.expanduser('~'), 'Desktop')
+        except KeyError:
+            return os.path.join(os.path.expanduser('~'), 'Área de Trabalho')
+    else:
+        raise Exception("Sistema operacional não suportado")
 
 def salvar_dados_word():
+    """
+    Salva os dados da cotação do dólar em um arquivo Word.
+    """
     cotacao_dolar_valor, cotacao_dolar_titulo, cotacao_dolar_porcentagem, data_atual, url_site = extrair_cotacao_dolar()
     
     if not cotacao_dolar_valor:
         return None
 
-    # Determinar o caminho da área de trabalho
-    sistema_operacional = platform.system()
-    if sistema_operacional == "Windows":
-        try:
-            desktop_path = os.path.join(os.environ['USERPROFILE'], 'Desktop')
-        except:
-            desktop_path = os.path.join(os.environ['USERPROFILE'], 'Área de Trabalho')
-    elif sistema_operacional in ["Darwin", "Linux"]:  # macOS e Linux
-        try:
-            desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
-        except:
-            desktop_path = os.path.join(os.path.expanduser('~'), 'Área de Trabalho')
-    else:
-        raise Exception("Sistema operacional não suportado")
-
-    # Caminho completo para salvar o arquivo
+    desktop_path = obter_caminho_area_de_trabalho()
     file_path = os.path.join(desktop_path, 'cotacao_dolar.docx')
 
     doc = DocxDocument()
@@ -161,8 +171,10 @@ def salvar_dados_word():
 
     return file_path
 
-
 def converter_word_pdf():
+    """
+    Converte o arquivo Word gerado para PDF.
+    """
     file_path = salvar_dados_word()
     if not file_path:
         print("Erro ao salvar o arquivo Word.")
@@ -196,7 +208,6 @@ def converter_word_pdf():
             print(f"Erro ao converter Word para PDF: {type(e).__name__} - {e}")
     else:
         print("Sistema operacional não suportado.")
-
 
 if __name__ == '__main__':
     converter_word_pdf()
